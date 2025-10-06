@@ -1,0 +1,8 @@
+/.quarto/
+_freeze
+output
+_targets
+*_cache
+*_files
+
+**/*.quarto_ipynb
