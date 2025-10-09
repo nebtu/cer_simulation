@@ -30,48 +30,115 @@ power_analysis <- expand_grid(
     c(0.4, 0.4, 0.4, 0.4)
   ),
   #correlation between primary and secondary arm
-  futility = c(0.75, 0.5, 0.25, 0)
+  futility = c(0.75, 0.5, 0.25, 0),
+  bin = list(integer(0), c(5, 6, 7, 8))
 ) |>
-  mutate(corr = 0.5) |>
+  mutate(
+    corr = 0.5,
+    alt_drop = TRUE,
+    runs1 = 1000, #number of completely different trials
+    runs2 = 100, #number of second stages simulated per first stage
+    n1 = 50 #n2 is automatically the same as n1, since t of the design is 1/2, which is what the data gen function references
+  ) |>
   rowwise() |>
-  mutate(eff_name = sum(eff > 0), name = paste0(futility, "_", eff_name)) |>
+  mutate(
+    bin_treat_resp = ifelse(
+      length(bin) > 0,
+      list(ifelse(eff > 0, 0.25, 0.1)),
+      list(NULL)
+    ),
+    bin_con_resp = ifelse(
+      length(bin) > 0,
+      list(c(0.1, 0.1, 0.1, 0.1)),
+      list(NULL)
+    )
+  ) |>
+  mutate(
+    eff_name = sum(eff > 0),
+    name = paste0(
+      "f",
+      futility,
+      "_e",
+      eff_name,
+      ifelse(length(bin) > 0, "_bin", "")
+    )
+  ) |>
   ungroup() |>
   select(-eff_name)
 
-power_analysis_bin <- power_analysis |>
-  rowwise() |>
-  mutate(
-    bin_prop = list(ifelse(eff > 0, 0.25, 0.1))
-  ) |>
-  ungroup()
-
 fwer_analysis <- expand_grid(
   corr = c(0, 0.5, 0.8),
-  futility = c(0.75, 0.5, 0.25, 0)
+  futility = c(0.75, 0.5, 0.25, 0),
+  bin = list(integer(0), c(5, 6, 7, 8))
 ) |>
-  mutate(eff = list(c(0, 0, 0, 0))) |>
-  mutate(name = paste0("f", futility, "_", "c", corr))
-
+  mutate(
+    eff = list(c(0, 0, 0, 0)),
+    alt_drop = TRUE,
+    runs1 = 1000, #number of completely different trials
+    runs2 = 100, #number of second stages simulated per first stage
+    n1 = 50 #n2 is automatically the same as n1, since t of the design is 1/2, which is what the data gen function references
+  ) |>
+  rowwise() |>
+  mutate(
+    bin_treat_resp = ifelse(
+      length(bin) > 0,
+      list(c(0.1, 0.1, 0.1, 0.1)),
+      list(NULL)
+    ),
+    bin_con_resp = ifelse(
+      length(bin) > 0,
+      list(c(0.1, 0.1, 0.1, 0.1)),
+      list(NULL)
+    )
+  ) |>
+  mutate(
+    name = paste0(
+      "f",
+      futility,
+      "_c",
+      corr,
+      ifelse(length(bin) > 0, "_bin", "")
+    )
+  ) |>
+  ungroup()
 
 #power analysis
 power_map <- tar_map(
   values = power_analysis,
-  names = any_of("name"),
+  names = all_of("name"),
   tar_target(
-    power,
-    run_example_trial(
-      design,
-      runs1 = 1000,
-      runs2 = 100,
-      n1 = 50,
-      n2 = 50,
-      cor = corr,
+    index_batch,
+    seq_len(2)
+  ),
+  tar_target(
+    data_gen,
+    get_sim_data_gen(
+      corr = corr,
       eff = eff,
-      futility = futility
+      n1 = n1,
+      bin = bin,
+      bin_con_resp = bin_con_resp,
+      bin_treat_resp = bin_treat_resp
     )
   ),
   tar_target(
-    power_summary,
+    adaption_func,
+    get_sim_adaption(futility = futility, alt_drop = alt_drop)
+  ),
+  tar_target(
+    power,
+    sim_trial(
+      design,
+      runs1 = runs1,
+      runs2 = runs2,
+      adapt_rule = adaption_func,
+      data_gen_1 = data_gen[[1]],
+      data_gen_2 = data_gen[[2]]
+    ),
+    pattern = map(index_batch)
+  ),
+  tar_target(
+    power_summary_batchwise,
     power |>
       as_tibble() |>
       mutate(
@@ -79,100 +146,76 @@ power_map <- tar_map(
         eff = list(eff),
         futility = futility
       ) |>
-      process_power()
+      process_power(),
+    pattern = map(power)
+  ),
+  tar_target(
+    power_summary,
+    power_summary_batchwise |>
+      group_by(name, eff, corr, futility) |>
+      summarise(
+        across(is.numeric, mean)
+      )
   )
 )
 
-power_map_bin <- tar_map(
-  values = power_analysis_bin,
-  names = any_of("name"),
+#fwer analysis
+fwer_map <- tar_map(
+  values = fwer_analysis,
+  names = all_of("name"),
   tar_target(
-    power_bin,
-    run_example_trial_bin(
-      design,
-      runs1 = 1000,
-      runs2 = 100,
-      n1 = 50,
-      n2 = 50,
-      cor = corr,
+    fwer_index_batch,
+    seq_len(2)
+  ),
+  tar_target(
+    fwer_data_gen,
+    get_sim_data_gen(
+      corr = corr,
       eff = eff,
-      futility = futility,
-      bin_con_resp = c(0.1, 0.1, 0.1, 0.1),
-      bin_treat_resp = bin_prop
+      n1 = n1,
+      bin = bin,
+      bin_con_resp = bin_con_resp,
+      bin_treat_resp = bin_treat_resp
     )
   ),
   tar_target(
-    power_summary_bin,
-    power_bin |>
+    fwer_adaption_func,
+    get_sim_adaption(futility = futility, alt_drop = alt_drop)
+  ),
+  tar_target(
+    fwer,
+    sim_trial(
+      design,
+      runs1 = runs1,
+      runs2 = runs2,
+      adapt_rule = fwer_adaption_func,
+      data_gen_1 = fwer_data_gen[[1]],
+      data_gen_2 = fwer_data_gen[[2]]
+    ),
+    pattern = map(fwer_index_batch)
+  ),
+  tar_target(
+    fwer_summary_batchwise,
+    power |>
+      as_tibble() |>
       mutate(
         corr = corr,
         eff = list(eff),
         futility = futility
       ) |>
-      process_power()
-  )
-)
-
-#fwer_analysis
-fwer_map <- tar_map(
-  values = fwer_analysis,
-  names = any_of("name"),
-  tar_target(
-    fwer,
-    run_example_trial(
-      design,
-      runs1 = 1000,
-      runs2 = 100,
-      n1 = 50,
-      n2 = 50,
-      cor = corr,
-      eff = eff,
-      futility = futility
-    )
+      process_fwer(),
+    pattern = map(fwer)
   ),
   tar_target(
     fwer_summary,
-    fwer |>
-      as_tibble() |>
-      mutate(
-        corr = corr,
-        eff = list(eff),
-        futility = futility
-      ) |>
-      process_fwer()
+    fwer_summary_batchwise |>
+      group_by(name, eff, corr, futility) |>
+      summarise(
+        across(is.numeric, mean)
+      )
   )
 )
 
-fwer_map_bin <- tar_map(
-  values = fwer_analysis,
-  names = any_of("name"),
-  tar_target(
-    fwer_bin,
-    run_example_trial_bin(
-      design,
-      runs1 = 1000,
-      runs2 = 100,
-      n1 = 50,
-      n2 = 50,
-      cor = corr,
-      eff = eff,
-      futility = futility,
-      bin_con_resp = c(0.1, 0.1, 0.1, 0.1),
-      bin_treat_resp = c(0.1, 0.1, 0.1, 0.1)
-    )
-  ),
-  tar_target(
-    fwer_summary_bin,
-    fwer_bin |>
-      as_tibble() |>
-      mutate(
-        corr = corr,
-        eff = list(eff),
-        futility = futility
-      ) |>
-      process_fwer()
-  )
-)
 list(
   tar_target(
     design,
@@ -180,10 +223,6 @@ list(
   ),
   power_map,
   fwer_map,
-  power_map_bin,
-  fwer_map_bin,
   tar_combine(power_all_res, power_map["power_summary"]),
-  tar_combine(fwer_all_res, fwer_map["fwer_summary"]),
-  tar_combine(power_all_res_bin, power_map_bin["power_summary_bin"]),
-  tar_combine(fwer_all_res_bin, fwer_map_bin["fwer_summary_bin"])
+  tar_combine(fwer_all_res, fwer_map["fwer_summary"])
 )

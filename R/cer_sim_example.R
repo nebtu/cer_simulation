@@ -37,50 +37,20 @@ get_sim_design <- function(n, t) {
   design
 }
 
-
-example_data_gen <- function(corr, eff, n1) {
-  mu <- c(eff, eff)
-
-  corr_control <- rbind(
-    c(1, corr),
-    c(corr, 1)
-  )
-
-  corr_treatment <- rbind(
-    c(1, 0, 0, 0, corr, 0, 0, 0),
-    c(0, 1, 0, 0, 0, corr, 0, 0),
-    c(0, 0, 1, 0, 0, 0, corr, 0),
-    c(0, 0, 0, 1, 0, 0, 0, corr),
-    c(corr, 0, 0, 0, 1, 0, 0, 0),
-    c(0, corr, 0, 0, 0, 1, 0, 0),
-    c(0, 0, corr, 0, 0, 0, 1, 0),
-    c(0, 0, 0, corr, 0, 0, 0, 1)
-  )
-
-  data_gen_1 <- get_data_gen(
-    corr_control,
-    corr_treatment,
-    mu,
-    n1,
-    n1
-  )
-  data_gen_2 <- get_data_gen_2(
-    corr_control,
-    corr_treatment,
-    mu
-  )
-
-  c(data_gen_1, data_gen_2)
-}
-
-example_data_gen_bin <- function(
+get_sim_data_gen <- function(
   corr,
   eff,
   n1,
+  bin,
   bin_con_resp,
   bin_treat_resp
 ) {
-  mu <- c(eff, c(NA, NA, NA, NA))
+  #the ifelse is not technically necessary, but is more explicit
+  if (length(bin) > 0) {
+    mu <- c(eff, NA, NA, NA, NA)
+  } else {
+    mu <- c(eff, eff)
+  }
 
   corr_control <- rbind(
     c(1, corr),
@@ -104,7 +74,7 @@ example_data_gen_bin <- function(
     mu,
     n1,
     n1,
-    binary = c(5, 6, 7, 8),
+    binary = bin,
     bin_con_resp = bin_con_resp,
     bin_treat_resp = bin_treat_resp
   )
@@ -113,7 +83,7 @@ example_data_gen_bin <- function(
     corr_control,
     corr_treatment,
     mu,
-    binary = c(5, 6, 7, 8),
+    binary = bin,
     bin_con_resp = bin_con_resp,
     bin_treat_resp = bin_treat_resp
   )
@@ -121,7 +91,7 @@ example_data_gen_bin <- function(
   c(data_gen_1, data_gen_2)
 }
 
-get_example_adaption <- function(futility, alt_drop = FALSE) {
+get_sim_adaption <- function(futility, alt_drop = FALSE) {
   function(design) {
     p <- design$p_values_interim[1:4]
 
@@ -164,26 +134,6 @@ run_example_trial <- function(
   alt_drop = TRUE
 ) {
   dat <- example_data_gen(corr, eff, n1)
-  data_gen_1 <- dat[[1]]
-  data_gen_2 <- dat[[2]]
-  adapt_rule <- get_example_adaption(futility, alt_drop = alt_drop)
-  sim_trial(design, runs1, runs2, adapt_rule, data_gen_1, data_gen_2)
-}
-
-run_example_trial_bin <- function(
-  design,
-  runs1 = 10,
-  runs2 = 100,
-  n1 = 50,
-  n2 = 50,
-  corr = 0.8,
-  eff = c(0, 0, 0, 0),
-  futility = 0.75,
-  alt_drop = TRUE,
-  bin_con_resp,
-  bin_treat_resp
-) {
-  dat <- example_data_gen_bin(corr, eff, n1, bin_con_resp, bin_treat_resp)
   data_gen_1 <- dat[[1]]
   data_gen_2 <- dat[[2]]
   adapt_rule <- get_example_adaption(futility, alt_drop = alt_drop)
