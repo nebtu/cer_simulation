@@ -15,11 +15,20 @@ tar_option_set(
   ),
   seed = 1,
   memory = "transient",
-  garbage_collection = 2
+  garbage_collection = 5,
+  format = "qs",
+  controller = crew_controller_local(
+    workers = 41,
+    tasks_max = 1,
+    options_metrics = crew_options_metrics(
+      path = "worker_log_directory/", # Worker logs live here.
+      seconds_interval = 60
+    )
+  )
 )
 
 tar_source(files = "R")
-plan(multicore)
+plan(sequential)
 
 power_analysis <- expand_grid(
   #effect size of primary and secondary arms
@@ -119,11 +128,13 @@ power_map <- tar_map(
       bin = bin,
       bin_con_resp = bin_con_resp,
       bin_treat_resp = bin_treat_resp
-    )
+    ),
+    deployment = "main"
   ),
   tar_target(
     adaption_func,
-    get_sim_adaption(futility = futility, alt_drop = alt_drop)
+    get_sim_adaption(futility = futility, alt_drop = alt_drop),
+    deployment = "main"
   ),
   tar_target(
     power,
@@ -148,7 +159,8 @@ power_map <- tar_map(
         name = name
       ) |>
       process_power(),
-    pattern = map(power)
+    pattern = map(power),
+    deployment = "main"
   ),
   tar_target(
     power_summary,
@@ -156,7 +168,8 @@ power_map <- tar_map(
       group_by(across(all_of(c("name", "eff", "corr", "futility")))) |>
       summarise(
         across(where(is.numeric), mean)
-      )
+      ),
+    deployment = "main"
   )
 )
 
@@ -177,11 +190,13 @@ fwer_map <- tar_map(
       bin = bin,
       bin_con_resp = bin_con_resp,
       bin_treat_resp = bin_treat_resp
-    )
+    ),
+    deployment = "main"
   ),
   tar_target(
     fwer_adaption_func,
-    get_sim_adaption(futility = futility, alt_drop = alt_drop)
+    get_sim_adaption(futility = futility, alt_drop = alt_drop),
+    deployment = "main"
   ),
   tar_target(
     fwer,
@@ -206,7 +221,8 @@ fwer_map <- tar_map(
         name = name
       ) |>
       process_fwer(),
-    pattern = map(fwer)
+    pattern = map(fwer),
+    deployment = "main"
   ),
   tar_target(
     fwer_summary,
@@ -214,7 +230,8 @@ fwer_map <- tar_map(
       group_by(across(all_of(c("name", "eff", "corr", "futility")))) |>
       summarise(
         across(where(is.numeric), mean)
-      )
+      ),
+    deployment = "main"
   )
 )
 
