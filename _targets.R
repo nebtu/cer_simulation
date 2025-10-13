@@ -4,7 +4,7 @@ library(tarchetypes)
 library(future)
 library(dplyr)
 library(tidyr)
-
+library(crew)
 
 # Set target options:
 tar_option_set(
@@ -144,7 +144,8 @@ power_map <- tar_map(
       mutate(
         corr = corr,
         eff = list(eff),
-        futility = futility
+        futility = futility,
+        name = name
       ) |>
       process_power(),
     pattern = map(power)
@@ -152,9 +153,9 @@ power_map <- tar_map(
   tar_target(
     power_summary,
     power_summary_batchwise |>
-      group_by(name, eff, corr, futility) |>
+      group_by(across(all_of(c("name", "eff", "corr", "futility")))) |>
       summarise(
-        across(is.numeric, mean)
+        across(where(is.numeric), mean)
       )
   )
 )
@@ -196,12 +197,13 @@ fwer_map <- tar_map(
   ),
   tar_target(
     fwer_summary_batchwise,
-    power |>
+    fwer |>
       as_tibble() |>
       mutate(
         corr = corr,
         eff = list(eff),
-        futility = futility
+        futility = futility,
+        name = name
       ) |>
       process_fwer(),
     pattern = map(fwer)
@@ -209,9 +211,9 @@ fwer_map <- tar_map(
   tar_target(
     fwer_summary,
     fwer_summary_batchwise |>
-      group_by(name, eff, corr, futility) |>
+      group_by(across(all_of(c("name", "eff", "corr", "futility")))) |>
       summarise(
-        across(is.numeric, mean)
+        across(where(is.numeric), mean)
       )
   )
 )

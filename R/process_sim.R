@@ -1,17 +1,12 @@
 process_fwer <- function(result) {
   result |>
     as_tibble() |>
-    group_by(eff, futility, corr) |>
-    summarise(mean(rej_any), var(rej_any)) |>
-    mutate(name = tar_name())
+    group_by(eff, futility, corr, name) |>
+    summarise(mean(rej_any), var(rej_any))
 }
 
 process_power <- function(result) {
-  num_eff_hyp <- as.integer(str_extract(
-    tar_name(),
-    "_(\\d)$",
-    group = 1
-  ))
+  num_eff_hyp <- sum(result$eff[[1]] > 0)
   eff_hyp <- paste0(
     "rej_",
     c((5 - num_eff_hyp):4, (9 - num_eff_hyp):8)
@@ -31,7 +26,7 @@ process_power <- function(result) {
       rej_any_eff = (rowSums(pick(all_of(eff_hyp))) > 0),
       rej_any_eff_primary = (rowSums(pick(all_of(eff_hyp_primary))) > 0)
     ) |>
-    group_by(eff, futility, corr) |>
+    group_by(eff, futility, corr, name) |>
     summarise(
       across(starts_with("rej"), mean, .names = "mean_{.col}"),
       across(
@@ -39,6 +34,5 @@ process_power <- function(result) {
         \(x) confint(lm(x ~ 1)),
         .names = "conf_{.col}"
       )
-    ) |>
-    mutate(name = tar_name())
+    )
 }
