@@ -5,6 +5,7 @@ library(future)
 library(dplyr)
 library(tidyr)
 library(crew)
+library(autometric)
 
 # Set target options:
 tar_option_set(
@@ -22,13 +23,20 @@ tar_option_set(
     tasks_max = 1,
     options_metrics = crew_options_metrics(
       path = "worker_log_directory/", # Worker logs live here.
-      seconds_interval = 60
+      seconds_interval = 1
     )
   )
 )
 
 tar_source(files = "R")
 plan(sequential)
+
+if (tar_active()) {
+  log_start(
+    path = "main_process.txt", # Statistics on the main process go here.
+    seconds = 1
+  )
+}
 
 power_analysis <- expand_grid(
   #effect size of primary and secondary arms
