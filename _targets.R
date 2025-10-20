@@ -4,39 +4,24 @@ library(tarchetypes)
 library(future)
 library(dplyr)
 library(tidyr)
-library(crew)
 library(autometric)
+library(future.callr)
 
 # Set target options:
 tar_option_set(
   packages = c(
     "adagraph",
     "future",
-    "tidyverse"
+    "tidyverse",
+    "gt"
   ),
   seed = 1,
   memory = "transient",
-  garbage_collection = 5,
   format = "qs",
-  controller = crew_controller_local(
-    workers = 41,
-    tasks_max = 1,
-    options_metrics = crew_options_metrics(
-      path = "worker_log_directory/", # Worker logs live here.
-      seconds_interval = 1
-    )
-  )
 )
+plan(callr)
 
 tar_source(files = "R")
-plan(sequential)
-
-if (tar_active()) {
-  log_start(
-    path = "main_process.txt", # Statistics on the main process go here.
-    seconds = 1
-  )
-}
 
 power_analysis <- expand_grid(
   #effect size of primary and secondary arms
@@ -125,7 +110,7 @@ power_map <- tar_map(
   names = all_of("name"),
   tar_target(
     index_batch,
-    seq_len(2)
+    seq_len(100)
   ),
   tar_target(
     data_gen,
@@ -187,7 +172,7 @@ fwer_map <- tar_map(
   names = all_of("name"),
   tar_target(
     fwer_index_batch,
-    seq_len(2)
+    seq_len(100)
   ),
   tar_target(
     fwer_data_gen,
@@ -251,5 +236,13 @@ list(
   power_map,
   fwer_map,
   tar_combine(power_all_res, power_map["power_summary"]),
-  tar_combine(fwer_all_res, fwer_map["fwer_summary"])
+  tar_combine(fwer_all_res, fwer_map["fwer_summary"]),
+  tar_target(
+    power_tbl,
+    get_power_tbl(power_all_res)
+  ),
+  tar_target(
+    fwer_tbl,
+    get_fwer_tbl(fwer_all_res)
+  )
 )
