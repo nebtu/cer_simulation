@@ -152,15 +152,26 @@ power_map <- tar_map(
         name = name
       ) |>
       process_power(),
-    pattern = map(power),
-    deployment = "main"
+    pattern = map(power)
   ),
   tar_target(
     power_summary,
     power_summary_batchwise |>
       group_by(across(all_of(c("name", "eff", "corr", "futility")))) |>
       summarise(
-        across(where(is.numeric), mean)
+        across(
+          where(is.numeric),
+          list(mean = mean, sd = sd),
+          .names = "{.fn}_{.col}"
+        ),
+      ) |>
+      rename_with(
+        \(x) str_replace(x, "mean_mean", "mean"),
+        .cols = starts_with("mean_mean")
+      ) |>
+      rename_with(
+        \(x) str_replace(x, "sd_mean", "sd"),
+        .cols = starts_with("sd_mean")
       ),
     deployment = "main"
   )
@@ -214,15 +225,18 @@ fwer_map <- tar_map(
         name = name
       ) |>
       process_fwer(),
-    pattern = map(fwer),
-    deployment = "main"
+    pattern = map(fwer)
   ),
   tar_target(
     fwer_summary,
     fwer_summary_batchwise |>
       group_by(across(all_of(c("name", "eff", "corr", "futility")))) |>
       summarise(
-        across(where(is.numeric), mean)
+        across(
+          where(is.numeric),
+          list(mean = mean, sd = sd),
+          .names = "{.fn}_{.col}"
+        ),
       ),
     deployment = "main"
   )

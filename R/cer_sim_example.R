@@ -120,22 +120,3 @@ get_sim_adaption <- function(futility, alt_drop = FALSE) {
       )
   }
 }
-
-
-run_example_trial <- function(
-  design,
-  runs1 = 10,
-  runs2 = 100,
-  n1 = 50,
-  n2 = 50,
-  corr = 0.8,
-  eff = c(0, 0, 0, 0),
-  futility = 0.75,
-  alt_drop = TRUE
-) {
-  dat <- example_data_gen(corr, eff, n1)
-  data_gen_1 <- dat[[1]]
-  data_gen_2 <- dat[[2]]
-  adapt_rule <- get_example_adaption(futility, alt_drop = alt_drop)
-  sim_trial(design, runs1, runs2, adapt_rule, data_gen_1, data_gen_2)
-}
