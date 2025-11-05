@@ -113,7 +113,7 @@ get_sim_adaption <- function(futility, alt_drop = FALSE) {
 
     design |>
       multiarm_drop_arms(
-        drop_arms,
+        c(drop_arms, drop_arms + 4),
         n_cont_2 = rep(new_n[5], 2),
         n_treat_2 = rep(new_n[1:4], 2),
         alt_adj = alt_drop
