@@ -60,16 +60,16 @@ get_power_tbl <- function(power_all_res) {
       conf_high_any = mean_rej_any_eff + (sd_rej_any_eff / sqrt(100000)) * 1.96,
       conf_int_any = paste0(
         "(",
-        round(conf_low_any, 4),
+        vec_fmt_percent(conf_low_any, 4),
         ", ",
-        round(conf_high_any, 4),
+        vec_fmt_percent(conf_high_any, 4),
         ")"
       ),
       conf_int_all = paste0(
         "(",
-        round(conf_low_all, 4),
+        vec_fmt_percent(conf_low_all, 4),
         ", ",
-        round(conf_high_all, 4),
+        vec_fmt_percent(conf_high_all, 4),
         ")"
       )
     ) |>
@@ -100,9 +100,9 @@ get_power_tbl <- function(power_all_res) {
       mean_rej_all_eff = "Conjunctive",
       conf_int_all = "CI (Conj)",
     ) |>
-    fmt_number(
+    fmt_percent(
       c(mean_rej_any_eff, mean_rej_all_eff),
-      decimals = 3
+      decimals = 4
     )
 
   tbl_bin <- tbl_data |>
@@ -120,9 +120,9 @@ get_power_tbl <- function(power_all_res) {
       mean_rej_all_eff = "Conjunctive",
       conf_int_all = "CI (Conj)",
     ) |>
-    fmt_number(
+    fmt_percent(
       c(mean_rej_any_eff, mean_rej_all_eff),
-      decimals = 3
+      decimals = 4
     )
 
   list(
@@ -144,7 +144,13 @@ get_fwer_tbl <- function(fwer_all_res) {
       bin = str_ends(name, "bin"),
       conf_low = mean - (sd_rej_any / sqrt(100000)) * 1.96,
       conf_high = mean + (sd_rej_any / sqrt(100000)) * 1.96,
-      conf_int = paste0("(", round(conf_low, 4), ", ", round(conf_high, 4), ")")
+      conf_int = paste0(
+        "(",
+        vec_fmt_percent(conf_low, 4),
+        ", ",
+        vec_fmt_percent(conf_high, 4),
+        ")"
+      )
     ) |>
     pivot_wider(
       id_cols = c(corr, bin),
@@ -171,7 +177,7 @@ get_fwer_tbl <- function(fwer_all_res) {
       mean_Ultra = "Ultra",
       conf_int_Ultra = "CI (Ultra)"
     ) |>
-    fmt_number(
+    fmt_percent(
       mean_Conservative:`conf_int_Ultra`,
       decimals = 4
     )
@@ -194,7 +200,7 @@ get_fwer_tbl <- function(fwer_all_res) {
       mean_Ultra = "Ultra",
       conf_int_Ultra = "CI (Ultra)"
     ) |>
-    fmt_number(
+    fmt_percent(
       mean_Conservative:`conf_int_Ultra`,
       decimals = 4
     )
