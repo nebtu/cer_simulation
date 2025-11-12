@@ -60,16 +60,16 @@ get_power_tbl <- function(power_all_res) {
       conf_high_any = mean_rej_any_eff + (sd_rej_any_eff / sqrt(100000)) * 1.96,
       conf_int_any = paste0(
         "(",
-        vec_fmt_percent(conf_low_any, 4),
+        vec_fmt_percent(conf_low_any, 1),
         ", ",
-        vec_fmt_percent(conf_high_any, 4),
+        vec_fmt_percent(conf_high_any, 1),
         ")"
       ),
       conf_int_all = paste0(
         "(",
-        vec_fmt_percent(conf_low_all, 4),
+        vec_fmt_percent(conf_low_all, 1),
         ", ",
-        vec_fmt_percent(conf_high_all, 4),
+        vec_fmt_percent(conf_high_all, 1),
         ")"
       )
     ) |>
@@ -102,7 +102,7 @@ get_power_tbl <- function(power_all_res) {
     ) |>
     fmt_percent(
       c(mean_rej_any_eff, mean_rej_all_eff),
-      decimals = 4
+      decimals = 1
     )
 
   tbl_bin <- tbl_data |>
@@ -122,7 +122,7 @@ get_power_tbl <- function(power_all_res) {
     ) |>
     fmt_percent(
       c(mean_rej_any_eff, mean_rej_all_eff),
-      decimals = 4
+      decimals = 1
     )
 
   list(
@@ -146,9 +146,9 @@ get_fwer_tbl <- function(fwer_all_res) {
       conf_high = mean + (sd_rej_any / sqrt(100000)) * 1.96,
       conf_int = paste0(
         "(",
-        vec_fmt_percent(conf_low, 4),
+        vec_fmt_percent(conf_low, 2),
         ", ",
-        vec_fmt_percent(conf_high, 4),
+        vec_fmt_percent(conf_high, 2),
         ")"
       )
     ) |>
@@ -179,7 +179,7 @@ get_fwer_tbl <- function(fwer_all_res) {
     ) |>
     fmt_percent(
       mean_Conservative:`conf_int_Ultra`,
-      decimals = 4
+      decimals = 2
     )
 
   tbl_cont <- tbl_data |>
@@ -202,7 +202,7 @@ get_fwer_tbl <- function(fwer_all_res) {
     ) |>
     fmt_percent(
       mean_Conservative:`conf_int_Ultra`,
-      decimals = 4
+      decimals = 2
     )
 
   list(

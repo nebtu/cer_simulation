@@ -258,5 +258,9 @@ list(
   tar_target(
     fwer_tbl,
     get_fwer_tbl(fwer_all_res)
+  ),
+  tar_quarto(
+    binary_report,
+    "binary.qmd"
   )
 )

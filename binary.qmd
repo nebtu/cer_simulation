@@ -1,0 +1,145 @@
+---
+title: "Simulation of CER Method for mixed binary/continuous endpoints"
+output-dir: output
+author: B. Fallmann
+date: today
+email: "benjamin.fallmann\\@meduniwien.ac.at"
+format:
+  html:
+    embed-resources: true
+    fig-format: svg
+    title-block-banner: true
+    toc: true
+    toc-location: left
+    papersize: a4
+  pdf: 
+    fig-pos: 'H'
+    documentclass: article
+execute:
+  freeze: true
+  echo: false 
+  message: false 
+  warning: false
+number-sections: true
+fig-width: 6
+fig-asp: 0.618
+out-width: "70%"
+---
+
+```{r}
+library(targets)
+library(gt)
+```
+
+A simulation of the CER method for mixed continuous and binary endpoints was
+conducted.
+We assumed a trial with 4 different treatment arms, each compared pair-wise to
+a common control.
+For each arm, we tested two hypotheses, one primary and one secondary.
+The graph used for describing the testing strategy can be found in @fig-graph.
+
+The testing strategy for the intersection hypotheses used parametric tests for adjusting among p-values with
+known correlation (that is hypothesis sharing the same control) and Bonferroni
+otherwise.
+
+```{r}
+#| label: fig-graph
+#| fig-cap: Graph of the multiple comparison strategy used for the simulation.
+#|   Here hypotheses H1 - H4 are the primary endpoints for arms 1 to 4, and H5
+#|  - H8 are the corresponding secondary arms.
+library(graphicalMCP)
+tar_load(design)
+graph <- graph_create(design$weights, design$test_m)
+
+plot_layout <- rbind(
+  c(0, 0.5),
+  c(0.3, 0.5),
+  c(0.5, 0.5),
+  c(0.8, 0.5),
+  c(0, 0),
+  c(0.3, 0),
+  c(0.5, 0),
+  c(0.8, 0)
+)
+plot(graph, layout = plot_layout)
+```
+
+The primary endpoints were continuous outcomes, always simulated as normal
+variables with a variance of 1.
+Whenever a endpoint was assumed to be effective, we assumed a effect size of
+0.4, that is the expected difference between control and treatment.
+The secondary endpoints were binary outcomes. The control always had a response
+rate of 0.1, and the treatment arm had the same response rate of 0.1 for
+ineffective arms and a response rate of 0.25 for effective arms.
+
+To simulate a correlation between related primary and secondary arm, data was
+generated in the following way:
+Assume a fixed correlation $c$. We draw data from a bivariate normal
+distribution with the given correlation and covariance 1.
+The first part is used as the outcome for the primary endpoint. The second
+endpoint is set to 1 whenever the second part of the draw is below the
+corresponding quantile of the desired response rate, and to 0 otherwise.
+
+We used a sample size of 100 subjects for each arm, and did an interim analysis
+with possibility of adjustment and early rejection with the data of the first 50
+subjects.
+
+For the continuous endpoints, p-values were generated using one-sided t-tests
+with degrees of freedom under assuption of equal variance. For the binary
+endpoints, a one-sided two-proportion z-test with pooled variance was used.
+
+For the interim adaptions, we considered the following adaption rulesets:
+
+* Conservative: Drop arm if p-value of primary hypotheses greater or equal 0.75
+* Normal: Drop arm if p-value of primary hypotheses greater or equal 0.5
+* Agressive: Drop arm if p-value of primary hypotheses greater or equal 0.25
+* Ultra Agressive: Keep only arm with lowest primary hypotheses p-value, and stop
+  if the corresponding arm (i.e. primary and secondary hypothesis) get rejected
+  at the interim
+
+Whenever an arm was dropped, all future patients that would have been assigned
+to that arm were reassigned to the remaining arms and control group equally.
+
+For the power analysis, each of those strategies was simulated for the first 1,
+2, 3 or all hypotheses being effective, while assuming a correlation $c$ of 0.5.
+For the analysis of family-wise error control (FWER), each of the strategies was
+tested under correlation of 0.3, 0.5, and 0.8 respectively.
+
+For each scenario, we conducted 100,000 first stage simulations. For each
+simulated first stage, 100 stage two simulations were conducted.
+This has the benefit of being more computationally efficient compared to
+simulating each trial once, since the main computational effort is on adjusting the
+bounds for rejection after the adaptions from the interim analysis.
+
+```{r}
+#| label: tbl-power-res
+#| tbl-cap: Table describing the results for the different scenarios for the
+#|   power analysis. Disjunctive refers to the disjunctive power, so the chance
+#|   that any effective hypotheses is rejected. Conjunctive power is the chance
+#|   that all effective hypotheses are rejected. This is therefore not expected
+#|   to happen in the ultra agressive scenario if more than one arm is
+#|   effective. CI is the 95% confidence interval
+tar_load(power_tbl)
+power_tbl$tbl_bin |>
+  tab_options(table.font.size = 11)
+```
+
+```{r}
+#| label: tbl-fwer_res
+#| tbl-cap: Table describing the results for the different scenarios for the
+#|   analysis of the FWER.
+#|   CI is the 95% confidence interval
+tar_load(fwer_tbl)
+fwer_tbl$tbl_bin |>
+  tab_options(table.font.size = 11)
+```
+
+```{r}
+#The main difference to the scenarios with all continuous outcomes is that the
+#conjunctive power is much lower, especially in scenarios with many effective
+#arms. This is to be expected, since the non-centrality parameter for a single
+#hypothesis of continuous outcomes is
+#$$\frac{0.4}{2 / \sqrt{100}} = 2,$$
+#versus the parameter for the binary outcomes is
+#$$\frac{0.15}{\sqrt{0.15 \cdot 0.85 \cdot \frac{2}{100}}} \approx 2.73.$$
+```
