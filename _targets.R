@@ -152,7 +152,8 @@ power_map <- tar_map(
         name = name
       ) |>
       process_power(),
-    pattern = map(power)
+    pattern = map(power),
+    deployment = "main"
   ),
   tar_target(
     power_summary,
@@ -225,7 +226,8 @@ fwer_map <- tar_map(
         name = name
       ) |>
       process_fwer(),
-    pattern = map(fwer)
+    pattern = map(fwer),
+    deployment = "main"
   ),
   tar_target(
     fwer_summary,
