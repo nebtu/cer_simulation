@@ -51,7 +51,7 @@ power_analysis <- expand_grid(
     ),
     bin_con_resp = ifelse(
       length(bin) > 0,
-      list(c(0.1, 0.1, 0.1, 0.1)),
+      list(0.1),
       list(NULL)
     )
   ) |>
