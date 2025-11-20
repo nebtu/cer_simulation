@@ -64,7 +64,76 @@ plot_layout <- rbind(
 plot(graph, layout = plot_layout)
 ```
 
-The primary endpoints were continuous outcomes, always simulated as normal
+
+We used a sample size of 100 subjects for each arm, and did an interim analysis
+with possibility of adjustment and early rejection with the data of the first 50
+subjects.
+
+
+For the interim adaptions, we considered the following adaption rulesets:
+
+* Conservative: Drop arm if p-value of primary hypotheses greater or equal 0.75
+* Normal: Drop arm if p-value of primary hypotheses greater or equal 0.5
+* Agressive: Drop arm if p-value of primary hypotheses greater or equal 0.25
+* Ultra Agressive: Keep only arm with lowest primary hypotheses p-value, and stop
+  if the corresponding arm (i.e. primary and secondary hypothesis) get rejected
+  at the interim
+
+Whenever an arm was dropped, all future patients that would have been assigned
+to that arm were reassigned to the remaining arms and control group equally.
+For the power analysis, each of the adaption strategies was simulated for the last 1,
+2, 3 or all hypotheses being effective.
+
+For each scenario, we conducted 100,000 first stage simulations. For each
+simulated first stage, 100 stage two simulations were conducted.
+This has the benefit of being more computationally efficient compared to
+simulating each trial once, since the main computational effort is on adjusting the
+bounds for rejection after the adaptions from the interim analysis.
+
+# Continuous Outcomes
+
+In these scenarios, all outcomes are generated as continous normal variables.
+The different arms and the control group were identically and independently distributed.
+In each arm, a correlation between the primary and secondary endpoint was
+assumed.
+For the power analysis, all scenarios assumed a correlation $c$ of 0.5.
+For the analysis of family-wise error control (FWER), each of the adaption strategies was
+tested under correlation of 0.3, 0.5, and 0.8 respectively.
+
+All arms had a variance of 1.
+The mean was taken as 0 for the control and all ineffective arms, while
+any effective arm had an mean of 0.4.
+
+P-values were generated using one-sided t-tests
+with degrees of freedom under assuption of equal variance. 
+
+```{r}
+#| label: tbl-power-res
+#| tbl-cap: Table describing the results for the different scenarios for the
+#|   power analysis und continous endpoints. Disjunctive refers to the disjunctive power, so the chance
+#|   that any effective hypotheses is rejected. Conjunctive power is the chance
+#|   that all effective hypotheses are rejected. This is therefore not expected
+#|   to happen in the ultra agressive scenario if more than one arm is
+#|   effective. CI is the 95% confidence interval.
+tar_load(power_tbl)
+power_tbl$tbl_cont |>
+  tab_options(table.font.size = 11)
+```
+
+```{r}
+#| label: tbl-fwer_res
+#| tbl-cap: Table describing the results for the different scenarios for the
+#|   analysis of the FWER under continous endpoints.
+#|   CI is the 95% confidence interval.
+tar_load(fwer_tbl)
+fwer_tbl$tbl_cont |>
+  tab_options(table.font.size = 11)
+```
+
+# Mixed Continuous and Binary Outcomes
+
+The primary endpoints were continuous outcomes were as in the continuous
+scenarios, that is always simulated as normal
 variables with a variance of 1.
 Whenever a endpoint was assumed to be effective, we assumed a effect size of
 0.4, that is the expected difference between control and treatment.
@@ -80,66 +149,27 @@ The first part is used as the outcome for the primary endpoint. The second
 endpoint is set to 1 whenever the second part of the draw is below the
 corresponding quantile of the desired response rate, and to 0 otherwise.
 
-We used a sample size of 100 subjects for each arm, and did an interim analysis
-with possibility of adjustment and early rejection with the data of the first 50
-subjects.
-
-For the continuous endpoints, p-values were generated using one-sided t-tests
-with degrees of freedom under assuption of equal variance. For the binary
-endpoints, a one-sided two-proportion z-test with pooled variance was used.
-
-For the interim adaptions, we considered the following adaption rulesets:
-
-* Conservative: Drop arm if p-value of primary hypotheses greater or equal 0.75
-* Normal: Drop arm if p-value of primary hypotheses greater or equal 0.5
-* Agressive: Drop arm if p-value of primary hypotheses greater or equal 0.25
-* Ultra Agressive: Keep only arm with lowest primary hypotheses p-value, and stop
-  if the corresponding arm (i.e. primary and secondary hypothesis) get rejected
-  at the interim
-
-Whenever an arm was dropped, all future patients that would have been assigned
-to that arm were reassigned to the remaining arms and control group equally.
-
-For the power analysis, each of those strategies was simulated for the first 1,
-2, 3 or all hypotheses being effective, while assuming a correlation $c$ of 0.5.
-For the analysis of family-wise error control (FWER), each of the strategies was
-tested under correlation of 0.3, 0.5, and 0.8 respectively.
-
-For each scenario, we conducted 100,000 first stage simulations. For each
-simulated first stage, 100 stage two simulations were conducted.
-This has the benefit of being more computationally efficient compared to
-simulating each trial once, since the main computational effort is on adjusting the
-bounds for rejection after the adaptions from the interim analysis.
+For the binary
+endpoints, a one-sided .two-proportion z-test with pooled variance was used.
+For the continous arms we used one-sided t-test with equal variance as before.
 
 ```{r}
-#| label: tbl-power-res
+#| label: tbl-power-res-bin
 #| tbl-cap: Table describing the results for the different scenarios for the
-#|   power analysis. Disjunctive refers to the disjunctive power, so the chance
+#|   power analysis under mixed endpoints. Disjunctive refers to the disjunctive power, so the chance
 #|   that any effective hypotheses is rejected. Conjunctive power is the chance
 #|   that all effective hypotheses are rejected. This is therefore not expected
 #|   to happen in the ultra agressive scenario if more than one arm is
-#|   effective. CI is the 95% confidence interval
-tar_load(power_tbl)
+#|   effective. CI is the 95% confidence interval.
 power_tbl$tbl_bin |>
   tab_options(table.font.size = 11)
 ```
 
 ```{r}
-#| label: tbl-fwer_res
+#| label: tbl-fwer-res-bin
 #| tbl-cap: Table describing the results for the different scenarios for the
-#|   analysis of the FWER.
-#|   CI is the 95% confidence interval
-tar_load(fwer_tbl)
+#|   analysis of the FWER under mixed enpoints.
+#|   CI is the 95% confidence interval.
 fwer_tbl$tbl_bin |>
   tab_options(table.font.size = 11)
-```
-
-```{r}
-#The main difference to the scenarios with all continuous outcomes is that the
-#conjunctive power is much lower, especially in scenarios with many effective
-#arms. This is to be expected, since the non-centrality parameter for a single
-#hypothesis of continuous outcomes is
-#$$\frac{0.4}{2 / \sqrt{100}} = 2,$$
-#versus the parameter for the binary outcomes is
-#$$\frac{0.15}{\sqrt{0.15 \cdot 0.85 \cdot \frac{2}{100}}} \approx 2.73.$$
 ```
