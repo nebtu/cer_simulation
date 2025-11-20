@@ -9,7 +9,7 @@ An overview over the tested scenarios can be found in [results.html], as well as
 
 ## Usage
 
-For simply reproducing the whole simulation setup, install all dependencies (as
+For simply reproducing the whole simulation setup, clone the repository, install all dependencies (as
 listed in the [_targets.R] file) and run
 
 ```r
@@ -18,9 +18,9 @@ targets::tar_make_future(workers = 40)
 while setting `workers` to the appropriate amount of parallel workers.
 On 40 cores, the whole setup takes about 20 hours.
 
-The exact scenarios being run are defined in [_targets.R] as the `power_analysis` and
+The exact scenarios being run are defined in [_targets.R](_targets.R) as the `power_analysis` and
 `fwer_analysis` dataframes.
-Inspect them after running `r targets::tar_load_globals()`
+Inspect them after running `targets::tar_load_globals()`
 To run a simulation with different or only a subset of the scenarios, change the
 definition of those dataframes to include the same column names, with each row
 defining one scenario.
@@ -39,14 +39,14 @@ Using the `tar_map()` function, we define now for each of those scenarios some
 targets. These are used for generating the data generating function, the
 adaption function, conducting the actual simulation and (split into two steps)
 aggregating the results.
-All defined targets can be viewed by calling `r tar_visnetwork()` or as a
-dataframe using `r tar_manifest()`.
+All defined targets can be viewed by calling `tar_visnetwork()` or as a
+dataframe using `tar_manifest()`.
 
-In the [R/sim_setup.R] file, we define the functions for running the
+In the [sim_setup.R](R/sim_setup.R) file, we define the functions for running the
 simulations. These are mostly calls to the appropriate `adagraph` functions.
-The function `r get_sim_adaption()` definies the exact adaption rules used.
+The function `get_sim_adaption()` definies the exact adaption rules used.
 
-In [R/process_sim.R], functions for aggregating simulation results,
+In [process_sim.R](R/process_sim.R), functions for aggregating simulation results,
 calculating the operation characteristics and displaying them are defined.
 
 ## References
