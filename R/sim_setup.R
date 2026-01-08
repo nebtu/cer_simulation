@@ -1,6 +1,3 @@
-#'@importFrom stats pnorm qnorm pt
-library(adagraph)
-
 get_sim_design <- function(n, t) {
   ws <- .75 # (weight given to secondary endpoint)
   wp <- (1 - ws) / 3 # weight given to the other arms primary endpoint
@@ -93,18 +90,24 @@ get_sim_data_gen <- function(
 
 get_sim_adaption <- function(futility, alt_drop = FALSE) {
   function(design) {
+    # Only primary p-values are used for decisions
     p <- design$p_values_interim[1:4]
 
+    # arms count as rejected only when primary and secondary hypothesis are
+    # rejected
     trt_rej <- design$rej_interim[1:4] & design$rej_interim[5:8]
     if (futility > 0) {
+      #only keep arm with primary p above futility
       drop_hyp <- (p > futility) | trt_rej
     } else {
-      # drop all but the best performing one (and that as well if it is rejected)
+      # drop all but the best performing arm (and that as well if it is rejected)
       drop_hyp <- (p != min(p)) | trt_rej
     }
 
     drop_arms <- which(drop_hyp)
 
+    #we want the sample size to be redistributed equally across all remaining
+    #arms (including control)
     new_n <- redistribute_n(
       n = c(design$n_controls[1], design$n_treatments[1:4]),
       t = design$t,

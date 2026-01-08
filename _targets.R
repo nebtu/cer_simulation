@@ -262,7 +262,7 @@ list(
     get_fwer_tbl(fwer_all_res)
   ),
   tar_quarto(
-    binary_report,
-    "binary.qmd"
+    report,
+    "results.qmd"
   )
 )
