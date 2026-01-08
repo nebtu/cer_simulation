@@ -28,7 +28,8 @@ get_sim_design <- function(n, t) {
     t = t,
     alpha = alpha,
     test_m = m,
-    alpha_spending_f = as
+    alpha_spending_f = as,
+    seq_bonf = FALSE
   )
 
   design
